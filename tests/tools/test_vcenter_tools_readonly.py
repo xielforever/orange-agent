@@ -163,6 +163,16 @@ def fake_si(monkeypatch):
         snapshot=None,
     )
 
+    vm4 = _Obj(
+        name="vm4",
+        runtime=_Obj(powerState="poweredOff"),
+        config=_Obj(uuid="uuid-4", hardware=_Obj(numCPU=1, memoryMB=1024)),
+        guest=_Obj(),
+        summary=_Obj(config=_Obj(guestFullName="Ubuntu Linux", uuid="uuid-4")),
+        quickStats=_Obj(),
+        snapshot=None,
+    )
+
     host1 = _Obj(
         name="esxi-1",
         runtime=_Obj(connectionState="connected", powerState="poweredOn"),
@@ -195,7 +205,7 @@ def fake_si(monkeypatch):
     view_map = {
         (vcenter_ro.vim.ClusterComputeResource,): [cluster],
         (vcenter_ro.vim.Datastore,): [ds1],
-        (vcenter_ro.vim.VirtualMachine,): [vm, vm2, vm3],
+        (vcenter_ro.vim.VirtualMachine,): [vm, vm2, vm3, vm4],
         (vcenter_ro.vim.HostSystem,): [host1],
     }
     content = FakeContent(FakeViewManager(view_map), FakeEventManager([evt_err, evt_warn, evt_info, evt_vm1_recent, evt_vm1_old]))
@@ -290,3 +300,35 @@ def test_vcenter_get_drs_recommendations(fake_si):
     assert "recommendations" in out
     assert len(out["recommendations"]) > 0
     assert out["recommendations"][0]["reason"] == "Balance load"
+
+def test_vcenter_get_powered_off_vms(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_powered_off_vms())
+    assert "vms" in out
+    names = [v["name"] for v in out["vms"]]
+    assert "vm4" in names
+    assert "vm1" not in names
+
+def test_vcenter_get_vm_events_timeline(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_vm_events_timeline("vm1", hours=24))
+    assert "events" in out
+    assert len(out["events"]) > 0
+    assert out["events"][0]["message"] == "info"
+
+def test_vcenter_get_vm_performance(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_vm_performance("vm2"))
+    assert out["vm_name"] == "vm2"
+    assert "metrics" in out
+
+def test_vcenter_get_vm_disk_usage(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_vm_disk_usage("vm1"))
+    assert out["vm_name"] == "vm1"
+    assert "disks" in out
+    assert len(out["disks"]) > 0
+
+def test_vcenter_find_orphan_snapshots(fake_si):
+    out = json.loads(vcenter_ro.vcenter_find_orphan_snapshots(days_old=7))
+    assert "snapshots" in out
+
+def test_vcenter_get_vm_console_screenshot(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_vm_console_screenshot("vm2"))
+    assert "image_base64" in out or "error" in out

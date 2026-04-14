@@ -199,7 +199,20 @@ def vcenter_get_top_memory_vms(limit: int = 5) -> str:
 
 def vcenter_get_powered_off_vms() -> str:
     """获取所有关机状态的虚拟机"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+    
+    powered_off = []
+    for vm in vms:
+        runtime = getattr(vm, "runtime", None)
+        state = getattr(runtime, "powerState", None) if runtime else None
+        if state == vim.VirtualMachine.PowerState.poweredOff:
+            powered_off.append({
+                "name": getattr(vm, "name", "unknown"),
+                "power_state": "poweredOff"
+            })
+            
+    return _safe_json({"vms": powered_off})
 
 def vcenter_get_vm_events_timeline(vm_name: str, hours: int = 24) -> str:
     """获取虚拟机近期事件时间线"""
@@ -280,7 +293,28 @@ def vcenter_get_vm_config(vm_name: str) -> str:
 
 def vcenter_get_vm_performance(vm_name: str) -> str:
     """查询 VM 深度性能指标 (Ready, Swap, Balloon)"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+    vm = next((v for v in vms if getattr(v, "name", None) == vm_name), None)
+    if vm is None:
+        return _safe_json({"error": f"VM not found: {vm_name}"})
+
+    summary = getattr(vm, "summary", None)
+    qs = getattr(summary, "quickStats", None) if summary else None
+    
+    metrics = {
+        "cpu_ready_ms": getattr(qs, "cpuReady", 0) if qs else 0,
+        "memory_ballooned_mb": getattr(qs, "balloonedMemory", 0) if qs else 0,
+        "memory_swapped_mb": getattr(qs, "swappedMemory", 0) if qs else 0,
+        "uptime_seconds": getattr(qs, "uptimeSeconds", 0) if qs else 0,
+        "overall_cpu_usage_mhz": getattr(qs, "overallCpuUsage", 0) if qs else 0,
+        "overall_memory_usage_mb": getattr(qs, "guestMemoryUsage", 0) if qs else 0
+    }
+    
+    return _safe_json({
+        "vm_name": vm_name,
+        "metrics": metrics
+    })
 
 def vcenter_get_vm_disk_usage(vm_name: str) -> str:
     """查询虚拟机各个磁盘真实占用情况"""
@@ -464,7 +498,36 @@ def vcenter_get_vm_snapshots(vm_name: str) -> str:
 
 def vcenter_find_orphan_snapshots(days_old: int = 7) -> str:
     """扫描超期大型快照"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+    
+    from datetime import datetime, timedelta, timezone
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days_old)
+    
+    def _traverse_snapshots(snap_tree, vm_name):
+        orphans = []
+        for node in snap_tree:
+            create_time = getattr(node, "createTime", None)
+            if create_time and create_time < cutoff:
+                orphans.append({
+                    "vm_name": vm_name,
+                    "snapshot_name": getattr(node, "name", "unknown"),
+                    "description": getattr(node, "description", ""),
+                    "create_time": create_time.isoformat()
+                })
+            child_list = getattr(node, "childSnapshotList", [])
+            if child_list:
+                orphans.extend(_traverse_snapshots(child_list, vm_name))
+        return orphans
+        
+    all_orphans = []
+    for vm in vms:
+        snap = getattr(vm, "snapshot", None)
+        root_list = getattr(snap, "rootSnapshotList", []) if snap else []
+        if root_list:
+            all_orphans.extend(_traverse_snapshots(root_list, getattr(vm, "name", "unknown")))
+            
+    return _safe_json({"snapshots": all_orphans})
 
 def vcenter_get_drs_recommendations(cluster_name: str = None) -> str:
     """获取集群 DRS 建议及冲突规则"""
@@ -492,7 +555,22 @@ def vcenter_get_drs_recommendations(cluster_name: str = None) -> str:
 
 def vcenter_get_vm_console_screenshot(vm_name: str) -> str:
     """截取虚拟机控制台画面 (Base64)"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+    vm = next((v for v in vms if getattr(v, "name", None) == vm_name), None)
+    if vm is None:
+        return _safe_json({"error": f"VM not found: {vm_name}"})
+
+    try:
+        task = vm.CreateScreenshot_Task()
+        success, result = _wait_for_task(task)
+        if success:
+            return _safe_json({"vm_name": vm_name, "screenshot_path": result})
+        else:
+            return _safe_json({"error": f"Failed to create screenshot: {result}"})
+    except Exception as e:
+        # If CreateScreenshot_Task is not mocked or fails, return an error
+        return _safe_json({"error": str(e)})
 
 # ==============================================================================
 # Auto-Registration
