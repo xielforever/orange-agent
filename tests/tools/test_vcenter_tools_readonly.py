@@ -67,6 +67,36 @@ class FakeServiceInstance:
 def fake_si(monkeypatch):
     now = datetime.now(timezone.utc)
 
+    host1 = _Obj(
+        name="esxi-1",
+        runtime=_Obj(connectionState="connected", powerState="poweredOn"),
+        summary=_Obj(
+            hardware=_Obj(
+                vendor="Dell", 
+                model="PowerEdge R740", 
+                cpuModel="Intel Xeon", 
+                numCpuCores=32, 
+                cpuMhz=2000,
+                memorySize=256*1024**3
+            ),
+            quickStats=_Obj(
+                overallCpuUsage=4000, 
+                overallMemoryUsage=32*1024,
+                uptime=86400
+            )
+        ),
+        config=_Obj(
+            network=_Obj(
+                vswitch=[
+                    _Obj(name="vSwitch0", numPorts=128)
+                ],
+                pnic=[
+                    _Obj(device="vmnic0", mac="00:11:22:33:44:55", linkSpeed=_Obj(speedMb=10000, duplex=True))
+                ]
+            )
+        )
+    )
+
     cluster = _Obj(
         name="c1",
         summary=_Obj(
@@ -75,6 +105,7 @@ def fake_si(monkeypatch):
             numHosts=3,
             quickStats=_Obj(overallCpuUsage=2500, overallMemoryUsage=10 * 1024),
         ),
+        host=[host1],
         triggeredAlarmState=[
             _Obj(alarm=_Obj(info=_Obj(name="Datastore usage on disk")), overallStatus="red"),
         ],
@@ -173,35 +204,6 @@ def fake_si(monkeypatch):
         snapshot=None,
     )
 
-    host1 = _Obj(
-        name="esxi-1",
-        runtime=_Obj(connectionState="connected", powerState="poweredOn"),
-        summary=_Obj(
-            hardware=_Obj(
-                vendor="Dell", 
-                model="PowerEdge R740", 
-                cpuModel="Intel Xeon", 
-                numCpuCores=32, 
-                memorySize=256*1024**3
-            ),
-            quickStats=_Obj(
-                overallCpuUsage=4000, 
-                overallMemoryUsage=32*1024,
-                uptime=86400
-            )
-        ),
-        config=_Obj(
-            network=_Obj(
-                vswitch=[
-                    _Obj(name="vSwitch0", numPorts=128)
-                ],
-                pnic=[
-                    _Obj(device="vmnic0", mac="00:11:22:33:44:55", linkSpeed=_Obj(speedMb=10000, duplex=True))
-                ]
-            )
-        )
-    )
-
     view_map = {
         (vcenter_ro.vim.ClusterComputeResource,): [cluster],
         (vcenter_ro.vim.Datastore,): [ds1],
@@ -293,6 +295,16 @@ def test_vcenter_get_host_network_topology(fake_si):
     assert len(out["pnics"]) > 0
     assert out["pnics"][0]["device"] == "vmnic0"
     assert out["pnics"][0]["speed_mb"] == 10000
+
+def test_vcenter_get_hosts_overview(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_hosts_overview("c1"))
+    assert "hosts" in out
+    assert len(out["hosts"]) > 0
+    assert out["hosts"][0]["name"] == "esxi-1"
+    assert out["hosts"][0]["cpu_cores"] == 32
+    assert out["hosts"][0]["total_memory_gb"] == 256.0
+    assert out["hosts"][0]["used_cpu_mhz"] == 4000
+    assert out["hosts"][0]["used_memory_gb"] == 32.0
 
 def test_vcenter_get_drs_recommendations(fake_si):
     out = json.loads(vcenter_ro.vcenter_get_drs_recommendations("c1"))

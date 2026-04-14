@@ -415,6 +415,52 @@ def vcenter_get_vm_network_info(vm_name: str) -> str:
         "guest_networks": guest_nets
     })
 
+def vcenter_get_hosts_overview(cluster_name: str = None) -> str:
+    """指定集群（或所有主机）内 ESXi 主机的总资源、使用率和告警状态"""
+    content = _get_content()
+    
+    if cluster_name:
+        clusters = _iter_objects(content, [vim.ClusterComputeResource])
+        cluster = next((c for c in clusters if getattr(c, "name", None) == cluster_name), None)
+        if not cluster:
+            return _safe_json({"error": f"Cluster not found: {cluster_name}"})
+        hosts = getattr(cluster, "host", [])
+    else:
+        hosts = _iter_objects(content, [vim.HostSystem])
+        
+    result = []
+    for h in hosts:
+        name = getattr(h, "name", "unknown")
+        summary = getattr(h, "summary", None)
+        hw = getattr(summary, "hardware", None) if summary else None
+        qs = getattr(summary, "quickStats", None) if summary else None
+        
+        cpu_cores = getattr(hw, "numCpuCores", 0) if hw else 0
+        cpu_mhz = getattr(hw, "cpuMhz", 0) if hw else 0
+        total_cpu_mhz = cpu_cores * cpu_mhz
+        used_cpu_mhz = getattr(qs, "overallCpuUsage", 0) if qs else 0
+        
+        total_mem_bytes = getattr(hw, "memorySize", 0) if hw else 0
+        total_mem_gb = total_mem_bytes / (1024**3)
+        used_mem_mb = getattr(qs, "overallMemoryUsage", 0) if qs else 0
+        used_mem_gb = used_mem_mb / 1024
+        
+        alarms = getattr(h, "triggeredAlarmState", []) or []
+        overall_status = getattr(summary, "overallStatus", "unknown") if summary else "unknown"
+
+        result.append({
+            "name": name,
+            "cpu_cores": cpu_cores,
+            "total_cpu_mhz": total_cpu_mhz,
+            "used_cpu_mhz": used_cpu_mhz,
+            "total_memory_gb": round(total_mem_gb, 2),
+            "used_memory_gb": round(used_mem_gb, 2),
+            "overall_status": str(overall_status),
+            "alarms_count": len(alarms)
+        })
+        
+    return _safe_json({"hosts": result})
+
 def vcenter_get_host_metrics(host_name: str) -> str:
     """查询特定 ESXi 主机实时负载及硬件传感器"""
     content = _get_content()
