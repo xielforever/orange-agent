@@ -137,6 +137,8 @@ def _discover_tools():
     """
     _modules = [
         "tools.web_tools",
+        "tools.vcenter_tools_readonly",
+        "tools.vcenter_tools_mutating",
         "tools.terminal_tool",
         "tools.file_tools",
         "tools.vision_tools",
