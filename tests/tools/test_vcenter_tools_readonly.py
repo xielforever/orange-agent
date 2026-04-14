@@ -9,7 +9,17 @@ from tools import vcenter_tools_readonly as vcenter_ro
 class _Obj:
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
-            setattr(self, k, v)
+            if k == "__class__":
+                # Just store it, we'll override __class__ check in the mock
+                self._fake_class = v
+            else:
+                setattr(self, k, v)
+    
+    @property
+    def __class__(self):
+        if hasattr(self, "_fake_class"):
+            return self._fake_class
+        return type(self)
 
 
 class FakeContainerView:
@@ -68,6 +78,9 @@ def fake_si(monkeypatch):
         triggeredAlarmState=[
             _Obj(alarm=_Obj(info=_Obj(name="Datastore usage on disk")), overallStatus="red"),
         ],
+        drsRecommendation=[
+            _Obj(reasonText="Balance load", rating=4)
+        ]
     )
 
     ds1 = _Obj(
@@ -75,15 +88,46 @@ def fake_si(monkeypatch):
         summary=_Obj(capacity=100 * 1024**3, freeSpace=40 * 1024**3, type="VMFS"),
     )
 
-    evt_err = _Obj(createdTime=now, fullFormattedMessage="err", severity="error")
-    evt_warn = _Obj(createdTime=now - timedelta(minutes=1), fullFormattedMessage="warn", severity="warning")
-    evt_info = _Obj(createdTime=now - timedelta(minutes=2), fullFormattedMessage="info", severity="info")
+    evt_err = _Obj(createdTime=now, fullFormattedMessage="err", severity="error", vm=_Obj(vm=_Obj(name="vm2")))
+    evt_warn = _Obj(createdTime=now - timedelta(minutes=1), fullFormattedMessage="warn", severity="warning", vm=None)
+    evt_info = _Obj(createdTime=now - timedelta(minutes=2), fullFormattedMessage="info", severity="info", vm=_Obj(vm=_Obj(name="vm1")))
+    evt_vm1_recent = _Obj(createdTime=now - timedelta(minutes=5), fullFormattedMessage="vm1 event", severity="info", vm=_Obj(vm=_Obj(name="vm1")))
+    evt_vm1_old = _Obj(createdTime=now - timedelta(hours=25), fullFormattedMessage="vm1 old event", severity="info", vm=_Obj(vm=_Obj(name="vm1")))
 
     vm = _Obj(
         name="vm1",
         runtime=_Obj(powerState="poweredOn"),
-        config=_Obj(uuid="uuid-1", hardware=_Obj(numCPU=4, memoryMB=8192)),
-        guest=_Obj(ipAddress="10.0.0.1", toolsStatus="toolsOk"),
+        config=_Obj(
+            uuid="uuid-1", 
+            hardware=_Obj(
+                numCPU=4, 
+                memoryMB=8192,
+                device=[
+                    _Obj(
+                        __class__=_Obj(__name__="VirtualVmxnet3"),
+                        macAddress="00:50:56:01:02:03",
+                        deviceInfo=_Obj(label="Network adapter 1", summary="VM Network"),
+                        backing=_Obj(deviceName="VM Network", network=_Obj(name="VM Network"))
+                    ),
+                    _Obj(
+                        __class__=_Obj(__name__="VirtualDisk"),
+                        deviceInfo=_Obj(label="Hard disk 1", summary="50,000,000 KB"),
+                        capacityInKB=50 * 1024**2,
+                        backing=_Obj(datastore=_Obj(name="ds1"), fileName="[ds1] vm1/vm1.vmdk")
+                    )
+                ]
+            )
+        ),
+        guest=_Obj(
+            ipAddress="10.0.0.1", 
+            toolsStatus="toolsOk",
+            net=[
+                _Obj(macAddress="00:50:56:01:02:03", ipAddress=["10.0.0.1", "fe80::1"], network="VM Network")
+            ],
+            disk=[
+                _Obj(diskPath="/", capacity=50*1024**3, freeSpace=10*1024**3)
+            ]
+        ),
         summary=_Obj(config=_Obj(guestFullName="Ubuntu Linux", uuid="uuid-1")),
         quickStats=_Obj(overallCpuUsage=120, guestMemoryUsage=2048),
         snapshot=_Obj(
@@ -119,12 +163,42 @@ def fake_si(monkeypatch):
         snapshot=None,
     )
 
+    host1 = _Obj(
+        name="esxi-1",
+        runtime=_Obj(connectionState="connected", powerState="poweredOn"),
+        summary=_Obj(
+            hardware=_Obj(
+                vendor="Dell", 
+                model="PowerEdge R740", 
+                cpuModel="Intel Xeon", 
+                numCpuCores=32, 
+                memorySize=256*1024**3
+            ),
+            quickStats=_Obj(
+                overallCpuUsage=4000, 
+                overallMemoryUsage=32*1024,
+                uptime=86400
+            )
+        ),
+        config=_Obj(
+            network=_Obj(
+                vswitch=[
+                    _Obj(name="vSwitch0", numPorts=128)
+                ],
+                pnic=[
+                    _Obj(device="vmnic0", mac="00:11:22:33:44:55", linkSpeed=_Obj(speedMb=10000, duplex=True))
+                ]
+            )
+        )
+    )
+
     view_map = {
         (vcenter_ro.vim.ClusterComputeResource,): [cluster],
         (vcenter_ro.vim.Datastore,): [ds1],
         (vcenter_ro.vim.VirtualMachine,): [vm, vm2, vm3],
+        (vcenter_ro.vim.HostSystem,): [host1],
     }
-    content = FakeContent(FakeViewManager(view_map), FakeEventManager([evt_err, evt_warn, evt_info]))
+    content = FakeContent(FakeViewManager(view_map), FakeEventManager([evt_err, evt_warn, evt_info, evt_vm1_recent, evt_vm1_old]))
     si = FakeServiceInstance(content)
 
     monkeypatch.setattr(vcenter_ro, "get_vcenter_connection", lambda: si)
@@ -184,3 +258,35 @@ def test_vcenter_get_top_memory_vms(fake_si):
     out = json.loads(vcenter_ro.vcenter_get_top_memory_vms(limit=2))
     assert [v["name"] for v in out["vms"]] == ["vm3", "vm1"]
     assert [v["memory_usage_mb"] for v in out["vms"]] == [8192, 2048]
+
+def test_vcenter_get_vm_network_info(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_vm_network_info("vm1"))
+    assert out["vm_name"] == "vm1"
+    assert len(out["networks"]) > 0
+    assert out["networks"][0]["mac_address"] == "00:50:56:01:02:03"
+    assert out["networks"][0]["network_name"] == "VM Network"
+
+def test_vcenter_get_host_metrics(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_host_metrics("esxi-1"))
+    assert out["host_name"] == "esxi-1"
+    assert out["vendor"] == "Dell"
+    assert out["cpu_cores"] == 32
+    assert out["cpu_usage_mhz"] == 4000
+    assert out["memory_total_gb"] == 256
+    assert out["memory_usage_gb"] == 32
+
+def test_vcenter_get_host_network_topology(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_host_network_topology("esxi-1"))
+    assert out["host_name"] == "esxi-1"
+    assert len(out["vswitches"]) > 0
+    assert out["vswitches"][0]["name"] == "vSwitch0"
+    assert len(out["pnics"]) > 0
+    assert out["pnics"][0]["device"] == "vmnic0"
+    assert out["pnics"][0]["speed_mb"] == 10000
+
+def test_vcenter_get_drs_recommendations(fake_si):
+    out = json.loads(vcenter_ro.vcenter_get_drs_recommendations("c1"))
+    assert out["cluster_name"] == "c1"
+    assert "recommendations" in out
+    assert len(out["recommendations"]) > 0
+    assert out["recommendations"][0]["reason"] == "Balance load"

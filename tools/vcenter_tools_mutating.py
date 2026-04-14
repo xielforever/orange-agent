@@ -42,31 +42,115 @@ def _wait_for_task(task):
 
 @requires_approval(description="开启虚拟机")
 def vcenter_power_on_vm(vm_name: str) -> str:
-    return _safe_json({"status": "placeholder"})
+    content = get_vcenter_connection().RetrieveContent()
+    vm = get_obj(content, [vim.VirtualMachine], vm_name)
+    if not vm:
+        return _safe_json({"status": "error", "message": f"VM not found: {vm_name}"})
+    if vm.runtime.powerState == vim.VirtualMachine.PowerState.poweredOn:
+        return _safe_json({"status": "success", "message": f"VM {vm_name} is already powered on."})
+    task = vm.PowerOn()
+    success, result = _wait_for_task(task)
+    if success:
+        return _safe_json({"status": "success", "message": f"VM {vm_name} powered on successfully."})
+    return _safe_json({"status": "error", "message": f"Failed to power on VM {vm_name}: {result}"})
 
 @requires_approval(description="强制关闭虚拟机")
 def vcenter_power_off_vm(vm_name: str) -> str:
-    return _safe_json({"status": "placeholder"})
+    content = get_vcenter_connection().RetrieveContent()
+    vm = get_obj(content, [vim.VirtualMachine], vm_name)
+    if not vm:
+        return _safe_json({"status": "error", "message": f"VM not found: {vm_name}"})
+    if vm.runtime.powerState == vim.VirtualMachine.PowerState.poweredOff:
+        return _safe_json({"status": "success", "message": f"VM {vm_name} is already powered off."})
+    task = vm.PowerOff()
+    success, result = _wait_for_task(task)
+    if success:
+        return _safe_json({"status": "success", "message": f"VM {vm_name} powered off successfully."})
+    return _safe_json({"status": "error", "message": f"Failed to power off VM {vm_name}: {result}"})
 
 @requires_approval(description="优雅关闭 Guest OS")
 def vcenter_shutdown_guest_os(vm_name: str) -> str:
-    return _safe_json({"status": "placeholder"})
+    content = get_vcenter_connection().RetrieveContent()
+    vm = get_obj(content, [vim.VirtualMachine], vm_name)
+    if not vm:
+        return _safe_json({"status": "error", "message": f"VM not found: {vm_name}"})
+    if vm.runtime.powerState == vim.VirtualMachine.PowerState.poweredOff:
+        return _safe_json({"status": "success", "message": f"VM {vm_name} is already powered off."})
+    try:
+        vm.ShutdownGuest()
+        return _safe_json({"status": "success", "message": f"Shutdown signal sent to Guest OS of VM {vm_name}."})
+    except Exception as e:
+        return _safe_json({"status": "error", "message": f"Failed to shutdown Guest OS of VM {vm_name}: {str(e)}"})
 
 @requires_approval(description="强制重启虚拟机")
 def vcenter_reset_vm(vm_name: str) -> str:
-    return _safe_json({"status": "placeholder"})
+    content = get_vcenter_connection().RetrieveContent()
+    vm = get_obj(content, [vim.VirtualMachine], vm_name)
+    if not vm:
+        return _safe_json({"status": "error", "message": f"VM not found: {vm_name}"})
+    task = vm.ResetVM_Task()
+    success, result = _wait_for_task(task)
+    if success:
+        return _safe_json({"status": "success", "message": f"VM {vm_name} reset successfully."})
+    return _safe_json({"status": "error", "message": f"Failed to reset VM {vm_name}: {result}"})
 
 @requires_approval(description="创建虚拟机快照")
 def vcenter_create_vm_snapshot(vm_name: str, snapshot_name: str, desc: str = "") -> str:
-    return _safe_json({"status": "placeholder"})
+    content = get_vcenter_connection().RetrieveContent()
+    vm = get_obj(content, [vim.VirtualMachine], vm_name)
+    if not vm:
+        return _safe_json({"status": "error", "message": f"VM not found: {vm_name}"})
+    
+    task = vm.CreateSnapshot_Task(name=snapshot_name, description=desc, memory=False, quiesce=False)
+    success, result = _wait_for_task(task)
+    if success:
+        return _safe_json({"status": "success", "message": f"Snapshot {snapshot_name} created for VM {vm_name}."})
+    return _safe_json({"status": "error", "message": f"Failed to create snapshot for VM {vm_name}: {result}"})
+
+def _find_snapshot_in_tree(snap_tree, snap_name):
+    for node in snap_tree:
+        if getattr(node, "name", None) == snap_name:
+            return node.snapshot
+        if getattr(node, "childSnapshotList", None):
+            found = _find_snapshot_in_tree(node.childSnapshotList, snap_name)
+            if found:
+                return found
+    return None
 
 @requires_approval(description="删除指定的虚拟机快照")
 def vcenter_remove_vm_snapshot(vm_name: str, snapshot_name: str) -> str:
-    return _safe_json({"status": "placeholder"})
+    content = get_vcenter_connection().RetrieveContent()
+    vm = get_obj(content, [vim.VirtualMachine], vm_name)
+    if not vm:
+        return _safe_json({"status": "error", "message": f"VM not found: {vm_name}"})
+    
+    snap = getattr(vm, "snapshot", None)
+    root = getattr(snap, "rootSnapshotList", None) if snap else None
+    if not root:
+        return _safe_json({"status": "error", "message": f"No snapshots found for VM {vm_name}."})
+        
+    snap_obj = _find_snapshot_in_tree(root, snapshot_name)
+    if not snap_obj:
+        return _safe_json({"status": "error", "message": f"Snapshot {snapshot_name} not found."})
+        
+    task = snap_obj.RemoveSnapshot_Task(removeChildren=False)
+    success, result = _wait_for_task(task)
+    if success:
+        return _safe_json({"status": "success", "message": f"Snapshot {snapshot_name} removed successfully."})
+    return _safe_json({"status": "error", "message": f"Failed to remove snapshot {snapshot_name}: {result}"})
 
 @requires_approval(description="删除虚拟机所有快照")
 def vcenter_remove_all_vm_snapshots(vm_name: str) -> str:
-    return _safe_json({"status": "placeholder"})
+    content = get_vcenter_connection().RetrieveContent()
+    vm = get_obj(content, [vim.VirtualMachine], vm_name)
+    if not vm:
+        return _safe_json({"status": "error", "message": f"VM not found: {vm_name}"})
+    
+    task = vm.RemoveAllSnapshots_Task()
+    success, result = _wait_for_task(task)
+    if success:
+        return _safe_json({"status": "success", "message": f"All snapshots removed for VM {vm_name}."})
+    return _safe_json({"status": "error", "message": f"Failed to remove all snapshots for VM {vm_name}: {result}"})
 
 @requires_approval(description="热添加虚拟机 CPU")
 def vcenter_hot_add_vm_cpu(vm_name: str, target_cores: int) -> str:

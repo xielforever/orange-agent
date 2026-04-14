@@ -203,7 +203,51 @@ def vcenter_get_powered_off_vms() -> str:
 
 def vcenter_get_vm_events_timeline(vm_name: str, hours: int = 24) -> str:
     """获取虚拟机近期事件时间线"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    try:
+        events = content.eventManager.QueryEvents(None)
+    except Exception:
+        events = []
+
+    from datetime import datetime, timedelta, timezone
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=max(1, int(hours or 24)))
+
+    filtered = []
+    for e in events or []:
+        vm = getattr(e, "vm", None)
+        if vm is None:
+            continue
+        # Both Event.vm and Event.vm.vm might hold the reference depending on vCenter version
+        name = getattr(vm, "name", None)
+        if name is None:
+            inner_vm = getattr(vm, "vm", None)
+            if inner_vm:
+                name = getattr(inner_vm, "name", None)
+                
+        if name != vm_name:
+            continue
+
+        ctime = getattr(e, "createdTime", None)
+        if ctime and ctime >= cutoff:
+            filtered.append(e)
+
+    filtered.sort(key=lambda e: getattr(e, "createdTime", None) or 0, reverse=True)
+
+    result = []
+    for e in filtered:
+        sev = (getattr(e, "severity", None) or getattr(getattr(e, "info", None), "level", "") or "").lower()
+        result.append(
+            {
+                "created_time": _iso(getattr(e, "createdTime", None)),
+                "severity": sev,
+                "message": getattr(e, "fullFormattedMessage", None),
+            }
+        )
+        
+    return _safe_json({
+        "vm_name": vm_name,
+        "events": result
+    })
 
 # ---- 维度二：深度排障类 (8-17) ----
 def vcenter_get_vm_config(vm_name: str) -> str:
@@ -240,19 +284,161 @@ def vcenter_get_vm_performance(vm_name: str) -> str:
 
 def vcenter_get_vm_disk_usage(vm_name: str) -> str:
     """查询虚拟机各个磁盘真实占用情况"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+    vm = next((v for v in vms if getattr(v, "name", None) == vm_name), None)
+    if vm is None:
+        return _safe_json({"error": f"VM not found: {vm_name}"})
+
+    config = getattr(vm, "config", None)
+    hardware = getattr(config, "hardware", None) if config else None
+    devices = getattr(hardware, "device", []) if hardware else []
+
+    disks = []
+    for dev in devices:
+        # Check if it's a virtual disk
+        class_name = type(dev).__name__
+        fake_class_name = getattr(getattr(dev, "__class__", None), "__name__", "")
+        if "VirtualDisk" in class_name or "VirtualDisk" in fake_class_name:
+            backing = getattr(dev, "backing", None)
+            datastore = getattr(backing, "datastore", None)
+            ds_name = getattr(datastore, "name", None) if datastore else None
+            info = getattr(dev, "deviceInfo", None)
+            label = getattr(info, "label", None) if info else None
+            cap_kb = getattr(dev, "capacityInKB", 0)
+            
+            disks.append({
+                "label": label,
+                "capacity_gb": int(cap_kb / (1024**2)) if cap_kb else None,
+                "datastore": ds_name,
+                "file_name": getattr(backing, "fileName", None)
+            })
+
+    guest = getattr(vm, "guest", None)
+    guest_disks = []
+    for g_disk in getattr(guest, "disk", []) or []:
+        guest_disks.append({
+            "path": getattr(g_disk, "diskPath", None),
+            "capacity_gb": _bytes_to_gb(getattr(g_disk, "capacity", None)),
+            "free_gb": _bytes_to_gb(getattr(g_disk, "freeSpace", None))
+        })
+
+    return _safe_json({
+        "vm_name": vm_name,
+        "disks": disks,
+        "guest_disks": guest_disks
+    })
 
 def vcenter_get_vm_network_info(vm_name: str) -> str:
     """查询 VM 的 vNIC 状态和绑定的 PortGroup"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+    vm = next((v for v in vms if getattr(v, "name", None) == vm_name), None)
+    if vm is None:
+        return _safe_json({"error": f"VM not found: {vm_name}"})
+
+    config = getattr(vm, "config", None)
+    hardware = getattr(config, "hardware", None) if config else None
+    devices = getattr(hardware, "device", []) if hardware else []
+
+    networks = []
+    for dev in devices:
+        is_net = isinstance(dev, vim.vm.device.VirtualEthernetCard) if hasattr(vim.vm.device, "VirtualEthernetCard") else False
+        class_name = type(dev).__name__
+        fake_class_name = getattr(getattr(dev, "__class__", None), "__name__", "")
+        if is_net or "VirtualEthernetCard" in class_name or "Vmxnet" in class_name or "E1000" in class_name or "VirtualEthernetCard" in fake_class_name or "Vmxnet" in fake_class_name or "E1000" in fake_class_name:
+            backing = getattr(dev, "backing", None)
+            net_name = None
+            if hasattr(backing, "network"):
+                net_obj = getattr(backing, "network", None)
+                if net_obj:
+                    net_name = getattr(net_obj, "name", None)
+            if not net_name:
+                net_name = getattr(backing, "deviceName", None)
+                
+            info = getattr(dev, "deviceInfo", None)
+            label = getattr(info, "label", None) if info else None
+            
+            networks.append({
+                "label": label,
+                "mac_address": getattr(dev, "macAddress", None),
+                "network_name": net_name,
+                "connected": getattr(getattr(dev, "connectable", None), "connected", None)
+            })
+
+    guest = getattr(vm, "guest", None)
+    guest_nets = []
+    for g_net in getattr(guest, "net", []) or []:
+        guest_nets.append({
+            "mac_address": getattr(g_net, "macAddress", None),
+            "ip_addresses": list(getattr(g_net, "ipAddress", []) or []),
+            "network": getattr(g_net, "network", None)
+        })
+
+    return _safe_json({
+        "vm_name": vm_name,
+        "networks": networks,
+        "guest_networks": guest_nets
+    })
 
 def vcenter_get_host_metrics(host_name: str) -> str:
     """查询特定 ESXi 主机实时负载及硬件传感器"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    hosts = _iter_objects(content, [vim.HostSystem])
+    host = next((h for h in hosts if getattr(h, "name", None) == host_name), None)
+    if host is None:
+        return _safe_json({"error": f"Host not found: {host_name}"})
+
+    summary = getattr(host, "summary", None)
+    hw = getattr(summary, "hardware", None) if summary else None
+    qs = getattr(summary, "quickStats", None) if summary else None
+
+    return _safe_json({
+        "host_name": host_name,
+        "vendor": getattr(hw, "vendor", None) if hw else None,
+        "model": getattr(hw, "model", None) if hw else None,
+        "cpu_model": getattr(hw, "cpuModel", None) if hw else None,
+        "cpu_cores": getattr(hw, "numCpuCores", None) if hw else None,
+        "cpu_usage_mhz": getattr(qs, "overallCpuUsage", None) if qs else None,
+        "memory_total_gb": _bytes_to_gb(getattr(hw, "memorySize", None)) if hw else None,
+        "memory_usage_gb": int(getattr(qs, "overallMemoryUsage", 0) / 1024) if qs and getattr(qs, "overallMemoryUsage", None) else None,
+        "uptime_sec": getattr(qs, "uptime", None) if qs else None,
+    })
 
 def vcenter_get_host_network_topology(host_name: str) -> str:
     """查询宿主机物理网卡及 vSwitch 拓扑"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    hosts = _iter_objects(content, [vim.HostSystem])
+    host = next((h for h in hosts if getattr(h, "name", None) == host_name), None)
+    if host is None:
+        return _safe_json({"error": f"Host not found: {host_name}"})
+
+    config = getattr(host, "config", None)
+    network = getattr(config, "network", None) if config else None
+
+    vswitches = []
+    for vsw in getattr(network, "vswitch", []) or []:
+        vswitches.append({
+            "name": getattr(vsw, "name", None),
+            "num_ports": getattr(vsw, "numPorts", None),
+            "mtu": getattr(vsw, "mtu", None),
+        })
+
+    pnics = []
+    for pnic in getattr(network, "pnic", []) or []:
+        speed = getattr(pnic, "linkSpeed", None)
+        pnics.append({
+            "device": getattr(pnic, "device", None),
+            "mac": getattr(pnic, "mac", None),
+            "speed_mb": getattr(speed, "speedMb", None) if speed else None,
+            "duplex": getattr(speed, "duplex", None) if speed else None,
+        })
+
+    return _safe_json({
+        "host_name": host_name,
+        "vswitches": vswitches,
+        "pnics": pnics
+    })
 
 def vcenter_get_vm_snapshots(vm_name: str) -> str:
     """列出单台 VM 的快照树"""
@@ -282,7 +468,27 @@ def vcenter_find_orphan_snapshots(days_old: int = 7) -> str:
 
 def vcenter_get_drs_recommendations(cluster_name: str = None) -> str:
     """获取集群 DRS 建议及冲突规则"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    clusters = _iter_objects(content, [vim.ClusterComputeResource])
+    if cluster_name:
+        clusters = [c for c in clusters if getattr(c, "name", None) == cluster_name]
+
+    if not clusters:
+        return _safe_json({"error": "No clusters found" if not cluster_name else f"Cluster not found: {cluster_name}"})
+
+    cluster = clusters[0]
+    recs = []
+    for rec in getattr(cluster, "drsRecommendation", []) or []:
+        recs.append({
+            "key": getattr(rec, "key", None),
+            "reason": getattr(rec, "reasonText", None),
+            "rating": getattr(rec, "rating", None)
+        })
+
+    return _safe_json({
+        "cluster_name": getattr(cluster, "name", None),
+        "recommendations": recs
+    })
 
 def vcenter_get_vm_console_screenshot(vm_name: str) -> str:
     """截取虚拟机控制台画面 (Base64)"""
