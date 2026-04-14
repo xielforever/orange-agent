@@ -5,26 +5,197 @@ from .vcenter_client import get_vcenter_connection, get_obj
 def _safe_json(data):
     return json.dumps(data, indent=2, ensure_ascii=False)
 
+def _get_content():
+    si = get_vcenter_connection()
+    return si.RetrieveContent()
+
+def _iter_objects(content, vimtypes):
+    container = content.viewManager.CreateContainerView(content.rootFolder, vimtypes, True)
+    try:
+        return list(container.view)
+    finally:
+        try:
+            container.Destroy()
+        except Exception:
+            pass
+
+def _iso(dt):
+    if dt is None:
+        return None
+    try:
+        return dt.isoformat()
+    except Exception:
+        return str(dt)
+
+def _bytes_to_gb(value):
+    if value is None:
+        return None
+    return int(round(value / (1024**3)))
+
+def _bytes_to_mb(value):
+    if value is None:
+        return None
+    return int(round(value / (1024**2)))
+
 # ---- 维度一：全局巡检类 (1-7) ----
 def vcenter_get_cluster_overview(cluster_name: str = None) -> str:
     """查询集群 CPU/内存总量及使用率"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    clusters = _iter_objects(content, [vim.ClusterComputeResource])
+    if cluster_name:
+        clusters = [c for c in clusters if getattr(c, "name", None) == cluster_name]
+    result = []
+    for c in clusters:
+        summary = getattr(c, "summary", None)
+        quick = getattr(summary, "quickStats", None)
+        triggered = getattr(c, "triggeredAlarmState", []) or []
+        result.append(
+            {
+                "name": getattr(c, "name", None),
+                "num_hosts": getattr(summary, "numHosts", None) if summary else None,
+                "cpu_total_mhz": getattr(summary, "totalCpu", None) if summary else None,
+                "cpu_used_mhz": getattr(quick, "overallCpuUsage", None) if quick else None,
+                "memory_total_mb": _bytes_to_mb(getattr(summary, "totalMemory", None)) if summary else None,
+                "memory_used_mb": getattr(quick, "overallMemoryUsage", None) if quick else None,
+                "triggered_alarms": [
+                    {
+                        "name": getattr(getattr(getattr(a, "alarm", None), "info", None), "name", None),
+                        "status": str(getattr(a, "overallStatus", "")),
+                    }
+                    for a in triggered
+                ],
+            }
+        )
+    return _safe_json({"clusters": result})
 
 def vcenter_get_datastore_capacity() -> str:
     """扫描存储池返回容量及剩余百分比"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    datastores = _iter_objects(content, [vim.Datastore])
+    result = []
+    for ds in datastores:
+        summary = getattr(ds, "summary", None)
+        capacity = getattr(summary, "capacity", None) if summary else None
+        free = getattr(summary, "freeSpace", None) if summary else None
+        free_pct = None
+        if capacity and free is not None:
+            try:
+                free_pct = round((free / capacity) * 100, 1)
+            except Exception:
+                free_pct = None
+        result.append(
+            {
+                "name": getattr(ds, "name", None),
+                "type": getattr(summary, "type", None) if summary else None,
+                "capacity_gb": _bytes_to_gb(capacity),
+                "free_gb": _bytes_to_gb(free),
+                "free_pct": free_pct,
+            }
+        )
+    return _safe_json({"datastores": result})
 
 def vcenter_get_recent_critical_events(limit: int = 10) -> str:
     """抓取全局 Error/Warning 事件"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    try:
+        events = content.eventManager.QueryEvents(None)
+    except Exception:
+        events = []
+
+    filtered = []
+    for e in events or []:
+        sev = getattr(e, "severity", None)
+        if sev is None:
+            sev = getattr(getattr(e, "info", None), "level", None)
+        sev = (sev or "").lower()
+        if sev not in {"error", "warning"}:
+            continue
+        filtered.append(e)
+
+    filtered.sort(key=lambda e: getattr(e, "createdTime", None) or 0, reverse=True)
+    filtered = filtered[: max(0, int(limit or 0))]
+
+    result = []
+    for e in filtered:
+        sev = (getattr(e, "severity", None) or getattr(getattr(e, "info", None), "level", "") or "").lower()
+        result.append(
+            {
+                "created_time": _iso(getattr(e, "createdTime", None)),
+                "severity": sev,
+                "message": getattr(e, "fullFormattedMessage", None),
+            }
+        )
+    return _safe_json({"events": result})
 
 def vcenter_get_top_cpu_vms(limit: int = 5) -> str:
     """获取 CPU 消耗 Top N 虚拟机"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+
+    ranked = []
+    for vm in vms:
+        summary = getattr(vm, "summary", None)
+        quick = getattr(summary, "quickStats", None) if summary else None
+        quick = quick or getattr(vm, "quickStats", None)
+        cpu = getattr(quick, "overallCpuUsage", None) if quick else None
+        ranked.append((cpu if cpu is not None else -1, vm))
+
+    ranked.sort(key=lambda x: x[0], reverse=True)
+    n = max(0, int(limit or 0))
+    ranked = ranked[:n]
+
+    result = []
+    for cpu, vm in ranked:
+        config = getattr(vm, "config", None)
+        guest = getattr(vm, "guest", None)
+        runtime = getattr(vm, "runtime", None)
+        result.append(
+            {
+                "name": getattr(vm, "name", None),
+                "uuid": getattr(config, "uuid", None) if config else None,
+                "power_state": getattr(runtime, "powerState", None) if runtime else None,
+                "ip_address": getattr(guest, "ipAddress", None) if guest else None,
+                "cpu_usage_mhz": None if cpu == -1 else cpu,
+            }
+        )
+
+    return _safe_json({"vms": result})
 
 def vcenter_get_top_memory_vms(limit: int = 5) -> str:
     """获取内存消耗 Top N 虚拟机"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+
+    ranked = []
+    for vm in vms:
+        summary = getattr(vm, "summary", None)
+        quick = getattr(summary, "quickStats", None) if summary else None
+        quick = quick or getattr(vm, "quickStats", None)
+        mem = getattr(quick, "guestMemoryUsage", None) if quick else None
+        if mem is None and quick is not None:
+            mem = getattr(quick, "hostMemoryUsage", None)
+        ranked.append((mem if mem is not None else -1, vm))
+
+    ranked.sort(key=lambda x: x[0], reverse=True)
+    n = max(0, int(limit or 0))
+    ranked = ranked[:n]
+
+    result = []
+    for mem, vm in ranked:
+        config = getattr(vm, "config", None)
+        guest = getattr(vm, "guest", None)
+        runtime = getattr(vm, "runtime", None)
+        result.append(
+            {
+                "name": getattr(vm, "name", None),
+                "uuid": getattr(config, "uuid", None) if config else None,
+                "power_state": getattr(runtime, "powerState", None) if runtime else None,
+                "ip_address": getattr(guest, "ipAddress", None) if guest else None,
+                "memory_usage_mb": None if mem == -1 else mem,
+            }
+        )
+
+    return _safe_json({"vms": result})
 
 def vcenter_get_powered_off_vms() -> str:
     """获取所有关机状态的虚拟机"""
@@ -37,7 +208,31 @@ def vcenter_get_vm_events_timeline(vm_name: str, hours: int = 24) -> str:
 # ---- 维度二：深度排障类 (8-17) ----
 def vcenter_get_vm_config(vm_name: str) -> str:
     """获取虚拟机基础配置信息"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+    vm = next((v for v in vms if getattr(v, "name", None) == vm_name), None)
+    if vm is None:
+        return _safe_json({"error": f"VM not found: {vm_name}"})
+
+    runtime = getattr(vm, "runtime", None)
+    config = getattr(vm, "config", None)
+    hw = getattr(config, "hardware", None) if config else None
+    guest = getattr(vm, "guest", None)
+    summary = getattr(vm, "summary", None)
+    sconfig = getattr(summary, "config", None) if summary else None
+
+    return _safe_json(
+        {
+            "name": getattr(vm, "name", None),
+            "uuid": getattr(config, "uuid", None) or getattr(sconfig, "uuid", None),
+            "power_state": getattr(runtime, "powerState", None) if runtime else None,
+            "guest_os": getattr(sconfig, "guestFullName", None) if sconfig else None,
+            "ip_address": getattr(guest, "ipAddress", None) if guest else None,
+            "tools_status": getattr(guest, "toolsStatus", None) if guest else None,
+            "num_cpu": getattr(hw, "numCPU", None) if hw else None,
+            "memory_mb": getattr(hw, "memoryMB", None) if hw else None,
+        }
+    )
 
 def vcenter_get_vm_performance(vm_name: str) -> str:
     """查询 VM 深度性能指标 (Ready, Swap, Balloon)"""
@@ -61,7 +256,25 @@ def vcenter_get_host_network_topology(host_name: str) -> str:
 
 def vcenter_get_vm_snapshots(vm_name: str) -> str:
     """列出单台 VM 的快照树"""
-    return _safe_json({"status": "placeholder_for_implementation"})
+    content = _get_content()
+    vms = _iter_objects(content, [vim.VirtualMachine])
+    vm = next((v for v in vms if getattr(v, "name", None) == vm_name), None)
+    if vm is None:
+        return _safe_json({"error": f"VM not found: {vm_name}"})
+
+    snap = getattr(vm, "snapshot", None)
+    root = getattr(snap, "rootSnapshotList", None) if snap else None
+
+    def _node(n):
+        return {
+            "name": getattr(n, "name", None),
+            "description": getattr(n, "description", None),
+            "create_time": _iso(getattr(n, "createTime", None)),
+            "state": getattr(n, "state", None),
+            "children": [_node(c) for c in (getattr(n, "childSnapshotList", None) or [])],
+        }
+
+    return _safe_json({"vm_name": getattr(vm, "name", None), "snapshots": [_node(n) for n in (root or [])]})
 
 def vcenter_find_orphan_snapshots(days_old: int = 7) -> str:
     """扫描超期大型快照"""
