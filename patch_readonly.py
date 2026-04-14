@@ -1,6 +1,6 @@
 import inspect
 from tools.registry import registry
-import tools.vcenter_tools_readonly as ro
+import tools.vcenter.readonly as ro
 
 def _register_readonly():
     for name, func in inspect.getmembers(ro, inspect.isfunction):

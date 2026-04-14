@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
 
-from tools import vcenter_tools_mutating as vcenter_mut
+from tools.vcenter import mutating as vcenter_mut
 
 from pyVmomi import vim
 

@@ -1,6 +1,6 @@
 import json
-from tools import vcenter_tools_mutating as vcenter_mut
-from tests.tools.test_vcenter_tools_mutating import fake_vcenter, FakeVM, FakeTask, _Obj, FakeSnapshot, FakeSnapshotTree
+from tools.vcenter import mutating as vcenter_mut
+from tests.tools.vcenter.test_mutating import fake_vcenter, FakeVM, FakeTask, _Obj, FakeSnapshot, FakeSnapshotTree
 
 class DummyMonkeypatch:
     def setattr(self, module, name, val=None):

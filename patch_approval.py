@@ -6,7 +6,7 @@ with open("tools/vcenter_tools_mutating.py", "r") as f:
 # Replace the import from tools.approval with a custom decorator
 new_import = """
 from pyVmomi import vim
-from .vcenter_client import get_vcenter_connection, get_obj
+from tools.vcenter.client import get_vcenter_connection, get_obj
 import json
 import time
 
@@ -35,7 +35,7 @@ def requires_approval(description):
     return decorator
 """
 
-content = re.sub(r'from tools\.approval import requires_approval\nfrom pyVmomi import vim\nfrom \.vcenter_client import get_vcenter_connection, get_obj\nimport json\nimport time', new_import, content)
+content = re.sub(r'from tools\.approval import requires_approval\nfrom pyVmomi import vim\nfrom \.client import get_vcenter_connection, get_obj\nimport json\nimport time', new_import, content)
 
 with open("tools/vcenter_tools_mutating.py", "w") as f:
     f.write(content)

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from tools import vcenter_tools_readonly as vcenter_ro
+from tools.vcenter import readonly as vcenter_ro
 
 
 class _Obj:

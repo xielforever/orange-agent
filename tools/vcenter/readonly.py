@@ -1,6 +1,6 @@
 import json
 from pyVmomi import vim
-from .vcenter_client import get_vcenter_connection, get_obj
+from .client import get_vcenter_connection, get_obj
 
 def _safe_json(data):
     return json.dumps(data, indent=2, ensure_ascii=False)

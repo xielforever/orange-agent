@@ -1,6 +1,6 @@
 
 from pyVmomi import vim
-from .vcenter_client import get_vcenter_connection, get_obj
+from .client import get_vcenter_connection, get_obj
 import json
 import time
 
