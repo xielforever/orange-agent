@@ -5,10 +5,10 @@
 # Hermes Agent ☤ (vCenter AIOps 特别版)
 
 <p align="center">
-  <a href="https://github.com/yourusername/vcenter-aiops-agent/tree/main/docs"><img src="https://img.shields.io/badge/Docs-vcenter--aiops--agent-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://github.com/xielforever/orange-agent/tree/main/docs"><img src="https://img.shields.io/badge/Docs-orange--agent-FFD700?style=for-the-badge" alt="Documentation"></a>
   <a href="https://discord.gg/your-discord-invite"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/yourusername/vcenter-aiops-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://github.com/yourusername"><img src="https://img.shields.io/badge/Built%20by-Your%20Name-blueviolet?style=for-the-badge" alt="Built by Your Name"></a>
+  <a href="https://github.com/xielforever/orange-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://github.com/xielforever"><img src="https://img.shields.io/badge/Built%20by-Your%20Name-blueviolet?style=for-the-badge" alt="Built by xielforever"></a>
 </p>
 
 **基于 Hermes 核心构建的具备自我进化能力的 AI 智能体，现已深度集成 VMware vCenter AIOps 智能运维能力。** 
@@ -36,8 +36,8 @@
 ## 🚀 快速安装
 
 ```bash
-git clone https://github.com/yourusername/vcenter-aiops-agent.git
-cd vcenter-aiops-agent
+git clone https://github.com/xielforever/orange-agent.git
+cd orange-agent
 ./scripts/install.sh
 ```
 
@@ -66,7 +66,7 @@ hermes setup        # 运行完整的设置向导
 hermes doctor       # 诊断并修复任何问题
 ```
 
-📖 **[查看完整官方英文文档 →](https://github.com/yourusername/vcenter-aiops-agent/tree/main/docs)**
+📖 **[查看完整官方英文文档 →](https://github.com/xielforever/orange-agent/tree/main/docs)**
 
 ## CLI 与消息平台对照表
 
@@ -104,8 +104,8 @@ pytest tests/tools/vcenter/ -v
 我们非常欢迎您的贡献！开发环境快速启动：
 
 ```bash
-git clone https://github.com/yourusername/vcenter-aiops-agent.git
-cd vcenter-aiops-agent
+git clone https://github.com/xielforever/orange-agent.git
+cd orange-agent
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv venv venv --python 3.11
 source venv/bin/activate
@@ -128,4 +128,4 @@ python -m pytest tests/ -q
 
 MIT 协议 — 详见 [LICENSE](LICENSE)。
 
-由您的团队或 [Your Name](https://github.com/yourusername) 构建 (Based on Hermes Agent).
+由您的团队或 [xielforever](https://github.com/xielforever) 构建 (Based on Hermes Agent).
