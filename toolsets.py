@@ -134,6 +134,28 @@ TOOLSETS = {
         "includes": []
     },
     
+    "vcenter": {
+        "description": "vCenter AIOps tools for infrastructure monitoring, troubleshooting, and mutating operations",
+        "tools": [
+            "vcenter_get_cluster_overview", "vcenter_get_datastore_capacity", 
+            "vcenter_get_recent_critical_events", "vcenter_get_top_cpu_vms",
+            "vcenter_get_top_memory_vms", "vcenter_get_powered_off_vms",
+            "vcenter_get_vm_events_timeline", "vcenter_get_vm_config",
+            "vcenter_get_vm_performance", "vcenter_get_vm_disk_usage",
+            "vcenter_get_vm_network_info", "vcenter_get_hosts_overview",
+            "vcenter_get_host_metrics", "vcenter_get_host_network_topology",
+            "vcenter_get_vm_snapshots", "vcenter_find_orphan_snapshots",
+            "vcenter_get_drs_recommendations", "vcenter_get_vm_console_screenshot",
+            "vcenter_power_on_vm", "vcenter_power_off_vm", "vcenter_shutdown_guest_os",
+            "vcenter_reset_vm", "vcenter_create_vm_snapshot", "vcenter_remove_vm_snapshot",
+            "vcenter_remove_all_vm_snapshots", "vcenter_hot_add_vm_cpu", "vcenter_hot_add_vm_memory",
+            "vcenter_expand_vm_disk", "vcenter_connect_vm_nic", "vcenter_change_vm_network",
+            "vcenter_restart_guest_network", "vcenter_mount_iso_to_vm",
+            "vcenter_enter_maintenance_mode", "vcenter_clone_vm"
+        ],
+        "includes": []
+    },
+    
     "rl": {
         "description": "RL training tools for running reinforcement learning on Tinker-Atropos",
         "tools": [

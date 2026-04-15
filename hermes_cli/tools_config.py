@@ -329,6 +329,22 @@ TOOL_CATEGORIES = {
             },
         ],
     },
+    "vcenter": {
+        "name": "vCenter AIOps",
+        "icon": "☁️",
+        "providers": [
+            {
+                "name": "vCenter Server",
+                "tag": "VMware infrastructure management",
+                "env_vars": [
+                    {"key": "VCENTER_HOST", "prompt": "vCenter Host (e.g., vcenter.example.com)"},
+                    {"key": "VCENTER_USER", "prompt": "vCenter Username (e.g., administrator@vsphere.local)"},
+                    {"key": "VCENTER_PASSWORD", "prompt": "vCenter Password", "password": True},
+                    {"key": "VCENTER_NO_SSL_VERIFY", "prompt": "Skip SSL Verification (true/false)", "default": "true"},
+                ],
+            },
+        ],
+    },
 }
 
 # Simple env-var requirements for toolsets NOT in TOOL_CATEGORIES.
