@@ -5,13 +5,13 @@
 # Hermes Agent ☤ (vCenter AIOps 特别版)
 
 <p align="center">
-  <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/hermes-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://nousresearch.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by Nous Research"></a>
+  <a href="https://github.com/yourusername/vcenter-aiops-agent/tree/main/docs"><img src="https://img.shields.io/badge/Docs-vcenter--aiops--agent-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://discord.gg/your-discord-invite"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://github.com/yourusername/vcenter-aiops-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://github.com/yourusername"><img src="https://img.shields.io/badge/Built%20by-Your%20Name-blueviolet?style=for-the-badge" alt="Built by Your Name"></a>
 </p>
 
-**由 [Nous Research](https://nousresearch.com) 构建的具备自我进化能力的 AI 智能体，现已深度集成 VMware vCenter AIOps 智能运维能力。** 
+**基于 Hermes 核心构建的具备自我进化能力的 AI 智能体，现已深度集成 VMware vCenter AIOps 智能运维能力。** 
 
 这是唯一一个内置“学习循环”的智能体 —— 它能够从经验中创建技能、在使用中自我完善、主动将知识持久化、搜索过往对话，并在跨会话交互中建立对您的深度认知模型。您可以将其部署在 5 美元的 VPS、GPU 集群，或者是闲置时几乎零成本的 Serverless 基础设施上。它不仅局限于您的笔记本电脑 —— 您可以在它运行于云端虚拟机时，通过 Telegram、微信等方式与它对话。
 
@@ -36,7 +36,9 @@
 ## 🚀 快速安装
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+git clone https://github.com/yourusername/vcenter-aiops-agent.git
+cd vcenter-aiops-agent
+./scripts/install.sh
 ```
 
 支持 Linux, macOS, WSL2 以及通过 Termux 运行在 Android 上。安装脚本将为您处理特定平台的依赖设置。
@@ -64,7 +66,7 @@ hermes setup        # 运行完整的设置向导
 hermes doctor       # 诊断并修复任何问题
 ```
 
-📖 **[查看完整官方英文文档 →](https://hermes-agent.nousresearch.com/docs/)**
+📖 **[查看完整官方英文文档 →](https://github.com/yourusername/vcenter-aiops-agent/tree/main/docs)**
 
 ## CLI 与消息平台对照表
 
@@ -102,8 +104,8 @@ pytest tests/tools/vcenter/ -v
 我们非常欢迎您的贡献！开发环境快速启动：
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
-cd hermes-agent
+git clone https://github.com/yourusername/vcenter-aiops-agent.git
+cd vcenter-aiops-agent
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv venv venv --python 3.11
 source venv/bin/activate
@@ -116,7 +118,7 @@ python -m pytest tests/ -q
 
 ## 🌐 社区资源
 
-- 💬 [Discord](https://discord.gg/NousResearch)
+- 💬 [Discord](https://discord.gg/your-discord-invite)
 - 📚 [Skills Hub 技能中心](https://agentskills.io)
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — 社区微信桥接方案：在同一个微信号上运行 Hermes Agent 和 OpenClaw。
 
@@ -126,4 +128,4 @@ python -m pytest tests/ -q
 
 MIT 协议 — 详见 [LICENSE](LICENSE)。
 
-由 [Nous Research](https://nousresearch.com) 构建。
+由您的团队或 [Your Name](https://github.com/yourusername) 构建 (Based on Hermes Agent).
