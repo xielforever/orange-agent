@@ -2,177 +2,132 @@
   <img src="assets/banner.png" alt="Hermes Agent" width="100%">
 </p>
 
-# Hermes Agent ☤
+# Hermes Agent ☤ (vCenter AIOps 特别版)
 
 <p align="center">
-  <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/hermes-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://nousresearch.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by Nous Research"></a>
+  <a href="https://github.com/xielforever/orange-agent/tree/main/docs"><img src="https://img.shields.io/badge/Docs-orange--agent-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://discord.gg/your-discord-invite"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://github.com/xielforever/orange-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://github.com/xielforever"><img src="https://img.shields.io/badge/Built%20by-Your%20Name-blueviolet?style=for-the-badge" alt="Built by xielforever"></a>
 </p>
 
-**The self-improving AI agent built by [Nous Research](https://nousresearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
+**基于 Hermes 核心构建的具备自我进化能力的 AI 智能体，现已深度集成 VMware vCenter AIOps 智能运维能力。** 
 
-Use any model you want — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, or your own endpoint. Switch with `hermes model` — no code changes, no lock-in.
+这是唯一一个内置“学习循环”的智能体 —— 它能够从经验中创建技能、在使用中自我完善、主动将知识持久化、搜索过往对话，并在跨会话交互中建立对您的深度认知模型。您可以将其部署在 5 美元的 VPS、GPU 集群，或者是闲置时几乎零成本的 Serverless 基础设施上。它不仅局限于您的笔记本电脑 —— 您可以在它运行于云端虚拟机时，通过 Telegram、微信等方式与它对话。
+
+支持使用任何您偏好的模型 —— [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ 模型), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, 或者是您本地私有部署的模型端点。只需使用 `hermes model` 即可一键切换 —— 无需修改代码，拒绝平台绑定。
+
+---
+
+## ✨ 核心特性
 
 <table>
-<tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
-<tr><td><b>Lives where you do</b></td><td>Telegram, Discord, Slack, WhatsApp, Signal, and CLI — all from a single gateway process. Voice memo transcription, cross-platform conversation continuity.</td></tr>
-<tr><td><b>A closed learning loop</b></td><td>Agent-curated memory with periodic nudges. Autonomous skill creation after complex tasks. Skills self-improve during use. FTS5 session search with LLM summarization for cross-session recall. <a href="https://github.com/plastic-labs/honcho">Honcho</a> dialectic user modeling. Compatible with the <a href="https://agentskills.io">agentskills.io</a> open standard.</td></tr>
-<tr><td><b>Scheduled automations</b></td><td>Built-in cron scheduler with delivery to any platform. Daily reports, nightly backups, weekly audits — all in natural language, running unattended.</td></tr>
-<tr><td><b>Delegates and parallelizes</b></td><td>Spawn isolated subagents for parallel workstreams. Write Python scripts that call tools via RPC, collapsing multi-step pipelines into zero-context-cost turns.</td></tr>
-<tr><td><b>Runs anywhere, not just your laptop</b></td><td>Six terminal backends — local, Docker, SSH, Daytona, Singularity, and Modal. Daytona and Modal offer serverless persistence — your agent's environment hibernates when idle and wakes on demand, costing nearly nothing between sessions. Run it on a $5 VPS or a GPU cluster.</td></tr>
-<tr><td><b>Research-ready</b></td><td>Batch trajectory generation, Atropos RL environments, trajectory compression for training the next generation of tool-calling models.</td></tr>
+<tr><td><b>🌟 vCenter AIOps 智能运维</b></td><td><b>(本项目特色)</b> 深度集成 33 个 vCenter 底层原子工具，分为 <b>A类只读排障</b> 与 <b>B类高危变更</b>。支持从集群负载巡检、VM 性能深度剖析、孤儿快照清理，到全自动的资源扩容、网络切换与虚拟机克隆。所有高危变更均受严格的权限审批拦截，确保生产环境绝对安全。详见 <code>tools/vcenter/README.md</code>。</td></tr>
+<tr><td><b>💻 真正的终端界面 (TUI)</b></td><td>提供全功能的 TUI 界面，支持多行编辑、斜杠命令自动补全、对话历史记录、随时中断与重定向，以及工具输出的实时流式显示。</td></tr>
+<tr><td><b>📱 无处不在的接入点</b></td><td>支持 Telegram, Discord, Slack, WhatsApp, Signal 以及 CLI —— 全部由单一网关进程统一管理。支持语音备忘录转录，实现跨平台的对话连续性。</td></tr>
+<tr><td><b>🔄 闭环学习系统</b></td><td>由智能体自行管理的记忆库，定期进行提醒。在完成复杂任务后自主创建技能。技能在使用过程中自我进化。支持 FTS5 会话搜索与 LLM 摘要，实现跨会话的记忆唤醒。结合 <a href="https://github.com/plastic-labs/honcho">Honcho</a> 进行辩证的用户建模。兼容 <a href="https://agentskills.io">agentskills.io</a> 开放标准。</td></tr>
+<tr><td><b>⏱️ 计划任务与自动化</b></td><td>内置 Cron 调度器，支持向任何平台投递消息。无论是每日巡检报告、夜间备份，还是每周审计 —— 全部通过自然语言配置，并在后台无人值守运行。</td></tr>
+<tr><td><b>🔀 任务委派与并发</b></td><td>能够生成隔离的子智能体以处理并行的工作流。编写通过 RPC 调用工具的 Python 脚本，将多步骤的流水线压缩为零上下文成本的单次交互。</td></tr>
+<tr><td><b>☁️ 随处运行</b></td><td>支持六种终端后端 —— 本地、Docker、SSH、Daytona、Singularity 以及 Modal。其中 Daytona 和 Modal 提供 Serverless 持久化 —— 您的智能体环境在闲置时休眠，在需要时唤醒。</td></tr>
 </table>
 
 ---
 
-## Quick Install
+## 🚀 快速安装
+
+最推荐的一键极速安装方式（支持 Linux & macOS）：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/xielforever/orange-agent/main/scripts/install.sh | bash
 ```
 
-Works on Linux, macOS, WSL2, and Android via Termux. The installer handles the platform-specific setup for you.
+*(如果你需要本地修改代码或二次开发，也可以手动 `git clone` 仓库后运行 `./scripts/install.sh`)*
 
-> **Android / Termux:** The tested manual path is documented in the [Termux guide](https://hermes-agent.nousresearch.com/docs/getting-started/termux). On Termux, Hermes installs a curated `.[termux]` extra because the full `.[all]` extra currently pulls Android-incompatible voice dependencies.
->
-> **Windows:** Native Windows is not supported. Please install [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) and run the command above.
+支持 Linux, macOS, WSL2 以及通过 Termux 运行在 Android 上。安装脚本将为您处理特定平台的依赖设置。
 
-After installation:
+> **vCenter 依赖说明:** 本项目已内置 vCenter AIOps 模块，请确保安装了 `pyvmomi` 依赖库 (`pip install pyvmomi`)，并配置 `VCENTER_HOST`, `VCENTER_USER`, `VCENTER_PASSWORD` 环境变量。
+
+安装完成后：
 
 ```bash
-source ~/.bashrc    # reload shell (or: source ~/.zshrc)
-hermes              # start chatting!
+source ~/.bashrc    # 重新加载 shell 配置
+hermes              # 开始对话！
 ```
 
 ---
 
-## Getting Started
+## 💡 快速入门指令
 
 ```bash
-hermes              # Interactive CLI — start a conversation
-hermes model        # Choose your LLM provider and model
-hermes tools        # Configure which tools are enabled
-hermes config set   # Set individual config values
-hermes gateway      # Start the messaging gateway (Telegram, Discord, etc.)
-hermes setup        # Run the full setup wizard (configures everything at once)
-hermes claw migrate # Migrate from OpenClaw (if coming from OpenClaw)
-hermes update       # Update to the latest version
-hermes doctor       # Diagnose any issues
+hermes              # 交互式 CLI — 开始对话
+hermes model        # 选择您的 LLM 提供商和模型
+hermes tools        # 配置启用哪些工具（如 vcenter 工具集）
+hermes config set   # 设置独立的配置项
+hermes gateway      # 启动消息网关 (Telegram, Discord 等)
+hermes setup        # 运行完整的设置向导
+hermes doctor       # 诊断并修复任何问题
 ```
 
-📖 **[Full documentation →](https://hermes-agent.nousresearch.com/docs/)**
+📖 **[查看完整官方英文文档 →](https://github.com/xielforever/orange-agent/tree/main/docs)**
 
-## CLI vs Messaging Quick Reference
+## CLI 与消息平台对照表
 
-Hermes has two entry points: start the terminal UI with `hermes`, or run the gateway and talk to it from Telegram, Discord, Slack, WhatsApp, Signal, or Email. Once you're in a conversation, many slash commands are shared across both interfaces.
+Hermes 提供两种入口：通过 `hermes` 启动终端 UI，或运行网关并通过 Telegram、Discord 等与其对话。一旦进入对话，许多斜杠命令在两个界面中都是通用的。
 
-| Action | CLI | Messaging platforms |
+| 动作 | CLI 终端 | 消息平台 (Telegram/Discord等) |
 |---------|-----|---------------------|
-| Start chatting | `hermes` | Run `hermes gateway setup` + `hermes gateway start`, then send the bot a message |
-| Start fresh conversation | `/new` or `/reset` | `/new` or `/reset` |
-| Change model | `/model [provider:model]` | `/model [provider:model]` |
-| Set a personality | `/personality [name]` | `/personality [name]` |
-| Retry or undo the last turn | `/retry`, `/undo` | `/retry`, `/undo` |
-| Compress context / check usage | `/compress`, `/usage`, `/insights [--days N]` | `/compress`, `/usage`, `/insights [days]` |
-| Browse skills | `/skills` or `/<skill-name>` | `/skills` or `/<skill-name>` |
-| Interrupt current work | `Ctrl+C` or send a new message | `/stop` or send a new message |
-| Platform-specific status | `/platforms` | `/status`, `/sethome` |
-
-For the full command lists, see the [CLI guide](https://hermes-agent.nousresearch.com/docs/user-guide/cli) and the [Messaging Gateway guide](https://hermes-agent.nousresearch.com/docs/user-guide/messaging).
+| 开始聊天 | `hermes` | 运行 `hermes gateway setup` + `hermes gateway start`，然后给机器人发消息 |
+| 开启新对话 | `/new` 或 `/reset` | `/new` 或 `/reset` |
+| 切换模型 | `/model [provider:model]` | `/model [provider:model]` |
+| 设置人格 | `/personality [name]` | `/personality [name]` |
+| 重试或撤销 | `/retry`, `/undo` | `/retry`, `/undo` |
+| 压缩上下文 / 检查用量 | `/compress`, `/usage`, `/insights [--days N]` | `/compress`, `/usage`, `/insights [days]` |
+| 浏览技能 | `/skills` 或 `/<skill-name>` | `/skills` 或 `/<skill-name>` |
+| 中断当前工作 | `Ctrl+C` 或发送新消息 | `/stop` 或发送新消息 |
 
 ---
 
-## Documentation
+## 🛠️ vCenter AIOps 架构说明
 
-All documentation lives at **[hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/)**:
+为了保障生产环境的绝对安全，本项目对 vCenter 工具集进行了严格的**读写分离**架构设计，存放于 `tools/vcenter/` 目录下：
 
-| Section | What's Covered |
-|---------|---------------|
-| [Quickstart](https://hermes-agent.nousresearch.com/docs/getting-started/quickstart) | Install → setup → first conversation in 2 minutes |
-| [CLI Usage](https://hermes-agent.nousresearch.com/docs/user-guide/cli) | Commands, keybindings, personalities, sessions |
-| [Configuration](https://hermes-agent.nousresearch.com/docs/user-guide/configuration) | Config file, providers, models, all options |
-| [Messaging Gateway](https://hermes-agent.nousresearch.com/docs/user-guide/messaging) | Telegram, Discord, Slack, WhatsApp, Signal, Home Assistant |
-| [Security](https://hermes-agent.nousresearch.com/docs/user-guide/security) | Command approval, DM pairing, container isolation |
-| [Tools & Toolsets](https://hermes-agent.nousresearch.com/docs/user-guide/features/tools) | 40+ tools, toolset system, terminal backends |
-| [Skills System](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills) | Procedural memory, Skills Hub, creating skills |
-| [Memory](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory) | Persistent memory, user profiles, best practices |
-| [MCP Integration](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp) | Connect any MCP server for extended capabilities |
-| [Cron Scheduling](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron) | Scheduled tasks with platform delivery |
-| [Context Files](https://hermes-agent.nousresearch.com/docs/user-guide/features/context-files) | Project context that shapes every conversation |
-| [Architecture](https://hermes-agent.nousresearch.com/docs/developer-guide/architecture) | Project structure, agent loop, key classes |
-| [Contributing](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) | Development setup, PR process, code style |
-| [CLI Reference](https://hermes-agent.nousresearch.com/docs/reference/cli-commands) | All commands and flags |
-| [Environment Variables](https://hermes-agent.nousresearch.com/docs/reference/environment-variables) | Complete env var reference |
+1. **`readonly.py` (A类只读工具)**：包含 18 个无状态查询工具（如集群巡检、Top VM 性能分析、孤儿快照扫描等），可供 Agent 高并发安全调用，绝不修改线上状态。
+2. **`mutating.py` (B类变更工具)**：包含 15 个高危变更工具（如快照删除、虚拟机克隆、网卡切换、热扩容等），所有方法均由 `@requires_approval` 拦截，Agent 在执行前必须向人类管理员发起授权审批弹窗。
 
----
-
-## Migrating from OpenClaw
-
-If you're coming from OpenClaw, Hermes can automatically import your settings, memories, skills, and API keys.
-
-**During first-time setup:** The setup wizard (`hermes setup`) automatically detects `~/.openclaw` and offers to migrate before configuration begins.
-
-**Anytime after install:**
-
+运行离线单元测试：
 ```bash
-hermes claw migrate              # Interactive migration (full preset)
-hermes claw migrate --dry-run    # Preview what would be migrated
-hermes claw migrate --preset user-data   # Migrate without secrets
-hermes claw migrate --overwrite  # Overwrite existing conflicts
+pytest tests/tools/vcenter/ -v
 ```
 
-What gets imported:
-- **SOUL.md** — persona file
-- **Memories** — MEMORY.md and USER.md entries
-- **Skills** — user-created skills → `~/.hermes/skills/openclaw-imports/`
-- **Command allowlist** — approval patterns
-- **Messaging settings** — platform configs, allowed users, working directory
-- **API keys** — allowlisted secrets (Telegram, OpenRouter, OpenAI, Anthropic, ElevenLabs)
-- **TTS assets** — workspace audio files
-- **Workspace instructions** — AGENTS.md (with `--workspace-target`)
-
-See `hermes claw migrate --help` for all options, or use the `openclaw-migration` skill for an interactive agent-guided migration with dry-run previews.
-
 ---
 
-## Contributing
+## 🤝 参与贡献
 
-We welcome contributions! See the [Contributing Guide](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) for development setup, code style, and PR process.
-
-Quick start for contributors:
+我们非常欢迎您的贡献！开发环境快速启动：
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
-cd hermes-agent
+git clone https://github.com/xielforever/orange-agent.git
+cd orange-agent
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv venv venv --python 3.11
 source venv/bin/activate
 uv pip install -e ".[all,dev]"
+# 运行测试
 python -m pytest tests/ -q
 ```
 
-> **RL Training (optional):** To work on the RL/Tinker-Atropos integration:
-> ```bash
-> git submodule update --init tinker-atropos
-> uv pip install -e "./tinker-atropos"
-> ```
+---
+
+## 🌐 社区资源
+
+- 💬 [Discord](https://discord.gg/your-discord-invite)
+- 📚 [Skills Hub 技能中心](https://agentskills.io)
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — 社区微信桥接方案：在同一个微信号上运行 Hermes Agent 和 OpenClaw。
 
 ---
 
-## Community
+## 📄 开源许可
 
-- 💬 [Discord](https://discord.gg/NousResearch)
-- 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
-- 💡 [Discussions](https://github.com/NousResearch/hermes-agent/discussions)
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Community WeChat bridge: Run Hermes Agent and OpenClaw on the same WeChat account.
+MIT 协议 — 详见 [LICENSE](LICENSE)。
 
----
-
-## License
-
-MIT — see [LICENSE](LICENSE).
-
-Built by [Nous Research](https://nousresearch.com).
+由您的团队或 [xielforever](https://github.com/xielforever) 构建 (Based on Hermes Agent).

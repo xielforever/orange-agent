@@ -6,7 +6,7 @@
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/xielforever/orange-agent/main/scripts/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -26,8 +26,8 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
-REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
+REPO_URL_SSH="git@github.com:xielforever/orange-agent.git"
+REPO_URL_HTTPS="https://github.com/xielforever/orange-agent.git"
 HERMES_HOME="$HOME/.hermes"
 INSTALL_DIR="${HERMES_INSTALL_DIR:-$HERMES_HOME/hermes-agent}"
 PYTHON_VERSION="3.11"
@@ -175,7 +175,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1 | iex"
+            log_info "  irm https://raw.githubusercontent.com/xielforever/orange-agent/main/scripts/install.ps1 | iex"
             exit 1
             ;;
         *)
@@ -438,7 +438,7 @@ install_node() {
     tmp_dir=$(mktemp -d)
 
     log_info "Downloading $tarball_name..."
-    if ! curl -fsSL "$download_url" -o "$tmp_dir/$tarball_name"; then
+    if ! curl -fL -# "$download_url" -o "$tmp_dir/$tarball_name"; then
         log_warn "Download failed"
         rm -rf "$tmp_dir"
         HAS_NODE=false
@@ -1090,7 +1090,8 @@ install_node_deps() {
             ubuntu|debian|raspbian|pop|linuxmint|elementary|zorin|kali|parrot)
                 log_info "Playwright may request sudo to install browser system dependencies (shared libraries)."
                 log_info "This is standard Playwright setup — Hermes itself does not require root access."
-                cd "$INSTALL_DIR" && npx playwright install --with-deps chromium 2>/dev/null || {
+                cd "$INSTALL_DIR" && log_info "Installing browser binaries (Playwright Chromium) - This involves a ~150MB download, please wait..."
+        npx playwright install --with-deps chromium || {
                     log_warn "Playwright browser installation failed — browser tools will not work."
                     log_warn "Try running manually: cd $INSTALL_DIR && npx playwright install --with-deps chromium"
                 }
@@ -1357,15 +1358,29 @@ main() {
 
     detect_os
     install_uv
+    log_info "[1/8] Checking Python environment..."
     check_python
+
+    log_info "[2/8] Checking Git installation..."
     check_git
+
+    log_info "[3/8] Checking Node.js installation (required for browser tools)..."
     check_node
+
+    log_info "[4/8] Installing system dependencies (ripgrep, ffmpeg)..."
     install_system_packages
 
+    log_info "[5/8] Cloning/Updating repository..."
     clone_repo
+
+    log_info "[6/8] Setting up Python virtual environment & dependencies..."
     setup_venv
     install_deps
+
+    log_info "[7/8] Installing Node.js dependencies (may take a few minutes)..."
     install_node_deps
+
+    log_info "[8/8] Finalizing setup and copying config templates..."
     setup_path
     copy_config_templates
     run_setup_wizard
