@@ -696,7 +696,29 @@ clone_repo() {
 
             git fetch origin
             git checkout "$BRANCH"
-            git pull --ff-only origin "$BRANCH"
+            
+            local timeout_cmd=""
+            if command -v timeout >/dev/null 2>&1; then
+                timeout_cmd="timeout 30 "
+            fi
+            
+            if ! eval "${timeout_cmd}git pull --ff-only origin \"$BRANCH\""; then
+                log_warn "Git pull timed out or failed. Trying with mirror accelerator..."
+                local mirror_url="https://ghproxy.net/$REPO_URL_HTTPS"
+                # Temporarily change origin URL
+                local old_url=$(git remote get-url origin)
+                git remote set-url origin "$mirror_url"
+                if git pull --ff-only origin "$BRANCH"; then
+                    log_success "Updated via mirror accelerator"
+                else
+                    log_error "Failed to update repository even with mirror accelerator"
+                    # Restore original URL
+                    git remote set-url origin "$old_url"
+                    exit 1
+                fi
+                # Restore original URL
+                git remote set-url origin "$old_url"
+            fi
 
             if [ -n "$autostash_ref" ]; then
                 local restore_now="yes"
@@ -745,11 +767,27 @@ clone_repo() {
         else
             rm -rf "$INSTALL_DIR" 2>/dev/null  # Clean up partial SSH clone
             log_info "SSH failed, trying HTTPS..."
-            if git clone --branch "$BRANCH" "$REPO_URL_HTTPS" "$INSTALL_DIR"; then
+            
+            # Use timeout command if available to prevent hanging forever
+            local clone_cmd="git clone --branch \"$BRANCH\" \"$REPO_URL_HTTPS\" \"$INSTALL_DIR\""
+            local timeout_cmd=""
+            if command -v timeout >/dev/null 2>&1; then
+                timeout_cmd="timeout 30 "
+            fi
+            
+            if eval "$timeout_cmd$clone_cmd"; then
                 log_success "Cloned via HTTPS"
             else
-                log_error "Failed to clone repository"
-                exit 1
+                log_warn "HTTPS clone failed or timed out. Trying mirror accelerator..."
+                rm -rf "$INSTALL_DIR" 2>/dev/null
+                local mirror_url="https://ghproxy.net/$REPO_URL_HTTPS"
+                local mirror_clone_cmd="git clone --branch \"$BRANCH\" \"$mirror_url\" \"$INSTALL_DIR\""
+                if eval "$mirror_clone_cmd"; then
+                    log_success "Cloned via mirror accelerator"
+                else
+                    log_error "Failed to clone repository"
+                    exit 1
+                fi
             fi
         fi
     fi
