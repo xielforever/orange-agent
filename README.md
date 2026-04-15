@@ -35,11 +35,13 @@
 
 ## 🚀 快速安装
 
+最推荐的一键极速安装方式（支持 Linux & macOS）：
+
 ```bash
-git clone https://github.com/xielforever/orange-agent.git
-cd orange-agent
-./scripts/install.sh
+curl -fsSL https://raw.githubusercontent.com/xielforever/orange-agent/main/scripts/install.sh | bash
 ```
+
+*(如果你需要本地修改代码或二次开发，也可以手动 `git clone` 仓库后运行 `./scripts/install.sh`)*
 
 支持 Linux, macOS, WSL2 以及通过 Termux 运行在 Android 上。安装脚本将为您处理特定平台的依赖设置。
 
