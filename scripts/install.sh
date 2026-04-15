@@ -1114,9 +1114,21 @@ install_node_deps() {
     if [ -f "$INSTALL_DIR/package.json" ]; then
         log_info "Installing Node.js dependencies (browser tools)..."
         cd "$INSTALL_DIR"
-        npm install --silent 2>/dev/null || {
-            log_warn "npm install failed (browser tools may not work)"
-        }
+        
+        # Determine timeout command if available
+        local timeout_cmd=""
+        if command -v timeout >/dev/null 2>&1; then
+            timeout_cmd="timeout 120 "
+        fi
+        
+        # Try standard npm install first
+        if ! eval "$timeout_cmd npm install --silent 2>/dev/null"; then
+            log_warn "npm install failed or timed out. Retrying with Taobao mirror..."
+            # Fallback to Taobao mirror
+            if ! eval "$timeout_cmd npm install --registry=https://registry.npmmirror.com --silent 2>/dev/null"; then
+                log_warn "npm install failed with mirror too (browser tools may not work)"
+            fi
+        fi
         log_success "Node.js dependencies installed"
 
         # Install Playwright browser + system dependencies.
@@ -1183,9 +1195,18 @@ install_node_deps() {
     if [ -f "$INSTALL_DIR/scripts/whatsapp-bridge/package.json" ]; then
         log_info "Installing WhatsApp bridge dependencies..."
         cd "$INSTALL_DIR/scripts/whatsapp-bridge"
-        npm install --silent 2>/dev/null || {
-            log_warn "WhatsApp bridge npm install failed (WhatsApp may not work)"
-        }
+        
+        local timeout_cmd=""
+        if command -v timeout >/dev/null 2>&1; then
+            timeout_cmd="timeout 60 "
+        fi
+        
+        if ! eval "$timeout_cmd npm install --silent 2>/dev/null"; then
+            log_warn "WhatsApp bridge npm install timed out. Retrying with Taobao mirror..."
+            if ! eval "$timeout_cmd npm install --registry=https://registry.npmmirror.com --silent 2>/dev/null"; then
+                log_warn "WhatsApp bridge npm install failed (WhatsApp may not work)"
+            fi
+        fi
         log_success "WhatsApp bridge dependencies installed"
     fi
 }
