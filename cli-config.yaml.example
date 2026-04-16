@@ -70,17 +70,6 @@ model:
   # max_tokens: 8192
 
 # =============================================================================
-# vCenter AIOps Configuration
-# =============================================================================
-# These settings can be configured here or in the .env file.
-# Environment variables will override these settings.
-# vcenter:
-#   host: "vcenter.example.com"
-#   user: "administrator@vsphere.local"
-#   password: "your_password"
-#   no_ssl_verify: true
-
-# =============================================================================
 # OpenRouter Provider Routing (only applies when using OpenRouter)
 # =============================================================================
 # Control how requests are routed across providers on OpenRouter.

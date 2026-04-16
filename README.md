@@ -2,7 +2,7 @@
   <img src="assets/banner.png" alt="Hermes Agent" width="100%">
 </p>
 
-# Hermes Agent ☤ (vCenter AIOps 特别版)
+# Hermes Agent ☤
 
 <p align="center">
   <a href="https://github.com/xielforever/orange-agent/tree/main/docs"><img src="https://img.shields.io/badge/Docs-orange--agent-FFD700?style=for-the-badge" alt="Documentation"></a>
@@ -11,7 +11,7 @@
   <a href="https://github.com/xielforever"><img src="https://img.shields.io/badge/Built%20by-Your%20Name-blueviolet?style=for-the-badge" alt="Built by xielforever"></a>
 </p>
 
-**基于 Hermes 核心构建的具备自我进化能力的 AI 智能体，现已深度集成 VMware vCenter AIOps 智能运维能力。** 
+**基于 Hermes 核心构建的具备自我进化能力的 AI 智能体。** 
 
 这是唯一一个内置“学习循环”的智能体 —— 它能够从经验中创建技能、在使用中自我完善、主动将知识持久化、搜索过往对话，并在跨会话交互中建立对您的深度认知模型。您可以将其部署在 5 美元的 VPS、GPU 集群，或者是闲置时几乎零成本的 Serverless 基础设施上。它不仅局限于您的笔记本电脑 —— 您可以在它运行于云端虚拟机时，通过 Telegram、微信等方式与它对话。
 
@@ -22,7 +22,6 @@
 ## ✨ 核心特性
 
 <table>
-<tr><td><b>🌟 vCenter AIOps 智能运维</b></td><td><b>(本项目特色)</b> 深度集成 33 个 vCenter 底层原子工具，分为 <b>A类只读排障</b> 与 <b>B类高危变更</b>。支持从集群负载巡检、VM 性能深度剖析、孤儿快照清理，到全自动的资源扩容、网络切换与虚拟机克隆。所有高危变更均受严格的权限审批拦截，确保生产环境绝对安全。详见 <code>tools/vcenter/README.md</code>。</td></tr>
 <tr><td><b>💻 真正的终端界面 (TUI)</b></td><td>提供全功能的 TUI 界面，支持多行编辑、斜杠命令自动补全、对话历史记录、随时中断与重定向，以及工具输出的实时流式显示。</td></tr>
 <tr><td><b>📱 无处不在的接入点</b></td><td>支持 Telegram, Discord, Slack, WhatsApp, Signal 以及 CLI —— 全部由单一网关进程统一管理。支持语音备忘录转录，实现跨平台的对话连续性。</td></tr>
 <tr><td><b>🔄 闭环学习系统</b></td><td>由智能体自行管理的记忆库，定期进行提醒。在完成复杂任务后自主创建技能。技能在使用过程中自我进化。支持 FTS5 会话搜索与 LLM 摘要，实现跨会话的记忆唤醒。结合 <a href="https://github.com/plastic-labs/honcho">Honcho</a> 进行辩证的用户建模。兼容 <a href="https://agentskills.io">agentskills.io</a> 开放标准。</td></tr>
@@ -45,8 +44,6 @@ curl -fsSL https://raw.githubusercontent.com/xielforever/orange-agent/main/scrip
 
 支持 Linux, macOS, WSL2 以及通过 Termux 运行在 Android 上。安装脚本将为您处理特定平台的依赖设置。
 
-> **vCenter 依赖说明:** 本项目已内置 vCenter AIOps 模块，请确保安装了 `pyvmomi` 依赖库 (`pip install pyvmomi`)，并配置 `VCENTER_HOST`, `VCENTER_USER`, `VCENTER_PASSWORD` 环境变量。
-
 安装完成后：
 
 ```bash
@@ -61,7 +58,7 @@ hermes              # 开始对话！
 ```bash
 hermes              # 交互式 CLI — 开始对话
 hermes model        # 选择您的 LLM 提供商和模型
-hermes tools        # 配置启用哪些工具（如 vcenter 工具集）
+hermes tools        # 配置启用哪些工具
 hermes config set   # 设置独立的配置项
 hermes gateway      # 启动消息网关 (Telegram, Discord 等)
 hermes setup        # 运行完整的设置向导
@@ -84,20 +81,6 @@ Hermes 提供两种入口：通过 `hermes` 启动终端 UI，或运行网关并
 | 压缩上下文 / 检查用量 | `/compress`, `/usage`, `/insights [--days N]` | `/compress`, `/usage`, `/insights [days]` |
 | 浏览技能 | `/skills` 或 `/<skill-name>` | `/skills` 或 `/<skill-name>` |
 | 中断当前工作 | `Ctrl+C` 或发送新消息 | `/stop` 或发送新消息 |
-
----
-
-## 🛠️ vCenter AIOps 架构说明
-
-为了保障生产环境的绝对安全，本项目对 vCenter 工具集进行了严格的**读写分离**架构设计，存放于 `tools/vcenter/` 目录下：
-
-1. **`readonly.py` (A类只读工具)**：包含 18 个无状态查询工具（如集群巡检、Top VM 性能分析、孤儿快照扫描等），可供 Agent 高并发安全调用，绝不修改线上状态。
-2. **`mutating.py` (B类变更工具)**：包含 15 个高危变更工具（如快照删除、虚拟机克隆、网卡切换、热扩容等），所有方法均由 `@requires_approval` 拦截，Agent 在执行前必须向人类管理员发起授权审批弹窗。
-
-运行离线单元测试：
-```bash
-pytest tests/tools/vcenter/ -v
-```
 
 ---
 
